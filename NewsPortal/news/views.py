@@ -3,7 +3,7 @@ from.models import Post
 from datetime import datetime
 from .filters import PostFilter
 from .forms import PostForm
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 
 
 
@@ -59,13 +59,13 @@ class PostSearch(ListView):
 
 
 
-class PostCreate(CreateView):
+class PostCreate(PermissionRequiredMixin, CreateView, LoginRequiredMixin):
     form_class = PostForm
     model = Post
     template_name = 'news_create.html'
     context_object_name = 'create'
     success_url = '/news/'
-    # permission_required = 'news.add_post'
+    permission_required = 'news.add_post'
 
 
     # def form_valid(self, form):
@@ -82,7 +82,7 @@ class PostCreate(CreateView):
 
 
 
-class PostEdit(UpdateView, LoginRequiredMixin):
+class PostEdit(PermissionRequiredMixin, UpdateView, LoginRequiredMixin):
     form_class = PostForm
     model = Post
     template_name = 'news_edit.html'
