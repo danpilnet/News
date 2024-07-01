@@ -1,9 +1,11 @@
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
-from.models import Post
+from.models import Post, Category, Subscribe
 from datetime import datetime
 from .filters import PostFilter
 from .forms import PostForm
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.views import View
+from django.shortcuts import render, redirect
 
 
 
@@ -68,17 +70,17 @@ class PostCreate(PermissionRequiredMixin, CreateView, LoginRequiredMixin):
     permission_required = 'news.add_post'
 
 
-    # def form_valid(self, form):
-        # post = form.save(commit=False)
-        # today = datetime.today()
-        # post_limit = Post.objects.filter(author=post.author, add_time__date=today).count()
-        # if post_limit >= 3:
-        #     return render(self.request, 'news_limit.html', {'author': post.author})
-        # if self.request.path =='/news/create/':
-        #     post.pole_ar_ne = 'NE'
-        # post.save()
+    def form_valid(self, form):
+        post = form.save(commit=False)
+        today = datetime.today()
+        post_limit = Post.objects.filter(author=post.author, add_time__date=today).count()
+        if post_limit >= 3:
+            return render(self.request, 'news_limit.html', {'author': post.author})
+        if self.request.path =='/news/create/':
+            post.pole_ar_ne = 'NE'
+        post.save()
         # send_email_task.delay(post.pk)
-        # return super().form_valid(form)
+        return super().form_valid(form)
 
 
 
@@ -97,3 +99,15 @@ class PostDelete(DeleteView):
     template_name = 'news_delete.html'
     context_object_name = 'delete'
     success_url = '/news/'
+
+
+
+
+class GetSub(LoginRequiredMixin, View):
+    def get(self,request,*args,**kwargs):
+        return render(request, 'subscribe.html', {'categories':Category.objects.all()})
+
+    def post(self,request,*args,**kwargs):
+        save_table = Subscribe(user_id=request.user.pk, category_sb_id=request.POST.get('category'))
+        save_table.save()
+        return redirect('subscribe')

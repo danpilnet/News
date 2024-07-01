@@ -1,9 +1,10 @@
 from datetime import datetime
 from django.views.generic import ListView, DetailView, CreateView, DeleteView, UpdateView
-from news. models import Post
+from news. models import Post, Category, Subscribe
 from. forms import PostForm
 from django.views import View
 from django.shortcuts import redirect, render
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 
 
 class ArticlesList(ListView):
@@ -36,7 +37,7 @@ class ArticlesDetail(DetailView):
 
 
 
-class ArticlesCreate(CreateView):
+class ArticlesCreate(PermissionRequiredMixin, CreateView, LoginRequiredMixin):
     form_class = PostForm
     model = Post
     template_name = 'news_create.html'
@@ -44,20 +45,20 @@ class ArticlesCreate(CreateView):
     success_url = '/articles/'
     permission_required = 'news.add_post'
 
-    # def form_valid(self, form):
-    #     post = form.save(commit=False)
-    #     today = datetime.today()
-    #     post_limit = Post.objects.filter(author=post.author, add_time__date=today).count()
-    #     if post_limit >= 3:
-    #         return render(self.request, 'news_limit.html', {'author': post.author})
-    #     if self.request.path =='/articles/create/':
-    #         post.pole_ar_ne = 'AR'
-    #     post.save()
-    #
-    #     return super().form_valid(form)
+    def form_valid(self, form):
+        post = form.save(commit=False)
+        today = datetime.today()
+        post_limit = Post.objects.filter(author=post.author, add_time__date=today).count()
+        if post_limit >= 3:
+            return render(self.request, 'news_limit.html', {'author': post.author})
+        if self.request.path =='/articles/create/':
+            post.pole_ar_ne = 'AR'
+        post.save()
+
+        return super().form_valid(form)
 
 
-class ArticlesEdit(UpdateView):
+class ArticlesEdit(PermissionRequiredMixin, UpdateView, LoginRequiredMixin):
     form_class = PostForm
     model = Post
     template_name = 'news_edit.html'
@@ -70,3 +71,13 @@ class ArticlesDelete(DeleteView):
     template_name = 'news_delete.html'
     context_object_name = 'delete'
     success_url = '/articles/'
+
+
+class GetSub(LoginRequiredMixin, View):
+    def get(self,request,*args,**kwargs):
+        return render(request, 'subscribe.html', {'categories':Category.objects.all()})
+
+    def post(self,request,*args,**kwargs):
+        save_table = Subscribe(user_id=request.user.pk, category_sb_id=request.POST.get('category'))
+        save_table.save()
+        return redirect('subscribe')
