@@ -6,6 +6,7 @@ from .forms import PostForm
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.views import View
 from django.shortcuts import render, redirect
+# from .tasks import send_email_task
 
 
 

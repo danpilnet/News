@@ -36,6 +36,134 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': True,
+    'filters': {
+        'debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+        'debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse',
+        }
+    },
+    'formatters': {
+        'format_debug': {
+            'format': '({asctime}) ({levelname}) ({message})',
+            'datefmt': '%Y:%m:%d %H:%M:%S',
+            'style': '{',
+            'validate': True
+        },
+        'format_warning': {
+            'format': '({pathname}) ({asctime}) ({levelname}) ({message})',
+            'datefmt': '%Y.%m.%d %H.%M.%S',
+            'style': '{',
+            'validate': True
+        },
+        'format_error_critical': {
+            'format': '({exc_info}) ({pathname}) ({asctime}) ({levelname}) ({message})',
+            'datefmt': '%Y/%m/%d %H/%M/%S',
+            'style': '{',
+            'validate': True
+        },
+        'general_log_info': {
+            'format': '({asctime}) ({levelname}) ({module})',
+            'datefmt': '%Y %m %d %H %M %S',
+            'style': '{',
+            'validate': True
+        },
+        'errors_log_error_critical': {
+            'format': '({pathname}) ({asctime}) ({levelname}) ({message}) ({stack_info})',
+            'datefmt': '%Y %m %d %H %M %S',
+            'style': '{',
+            'validate': True
+        },
+        'security_log_info': {
+            'format': '({asctime}) ({levelname}) ({module}) ({message})',
+            'datefmt': '%Y.%m.%d %H.%M.%S',
+            'style': '{',
+            'validate': True
+        }
+    },
+    'handlers': {
+        'handler_debug': {
+            'class': 'logging.StreamHandler',
+            'level': 'DEBUG',
+            'formatter': 'format_debug',
+            'filters': ['debug_true', ]
+        },
+        'handler_warning': {
+            'class': 'logging.StreamHandler',
+            'level': 'WARNING',
+            'formatter': 'format_warning',
+            'filters': ['debug_true', ]
+        },
+        'handler_error_critical': {
+            'class': 'logging.StreamHandler',
+            'level': 'ERROR',
+            'formatter': 'format_error_critical',
+            'filters': ['debug_true', ]
+        },
+        'handler_general_log_info': {
+            'class': 'logging.FileHandler',
+            'level': 'INFO',
+            'formatter': 'general_log_info',
+            'filename': 'loggers/general.log',
+            'filters': ['debug_false', ]
+        },
+        'handler_errors_log': {
+            'class': 'logging.FileHandler',
+            'level': 'ERROR',
+            'formatter': 'errors_log_error_critical',
+            'filename': 'loggers/errors.log'
+        },
+        'handler_security_log': {
+            'class': 'logging.FileHandler',
+            'level': 'INFO',
+            'formatter': 'security_log_info',
+            'filename': 'loggers/security.log'
+        },
+        'handler_error_request_server': {
+            'class': 'django.utils.log.AdminEmailHandler',
+            'level': 'ERROR',
+            'formatter': 'format_warning',
+            'filters': ['debug_false', ]
+        }
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['handler_debug',
+                         'handler_warning',
+                         'handler_error_critical',
+                         'handler_general_log_info'],
+            'propagate': True
+        },
+        'django.request': {
+            'handlers': ['handler_errors_log',
+                         'handler_error_request_server', ],
+            'propagate': True
+        },
+        'django.server': {
+            'handlers': ['handler_errors_log',
+                         'handler_error_request_server', ],
+            'propagate': True
+        },
+        'django.template': {
+            'handlers': ['handler_errors_log', ],
+            'propagate': True
+        },
+        'django.db.backends': {
+            'handlers': ['handler_errors_log', ],
+            'propagate': True
+        },
+        'django.security': {
+            'handlers': ['handler_security_log', ],
+            'propagate': True
+        }
+    }
+}
+
+
 
 
 # Application definition
@@ -73,6 +201,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.contrib.flatpages.middleware.FlatpageFallbackMiddleware',
     'allauth.account.middleware.AccountMiddleware',
+    'NewsPortal.middle.SimpleMiddleware',
 ]
 
 ROOT_URLCONF = 'NewsPortal.urls'
@@ -168,7 +297,7 @@ ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
-ACCOUNT_EMAIL_VERIFICATION = 'none'
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
 ACCOUNT_FORMS = {'signup': 'sign.models.BasicSignupForm'}
 
 
@@ -177,7 +306,7 @@ EMAIL_HOST = 'smtp.yandex.ru'
 EMAIL_PORT = 465
 EMAIL_HOST_USER = 'danpilnet'
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
-EMAIL_USER_SSL = True
+EMAIL_USE_SSL = True
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 
 
@@ -189,5 +318,20 @@ SITE_URL = 'http://127.0.0.1:8000'
 APSCHEDULER_DATETIME_FORMAT = "N j, Y, f:s a"
 APSCHEDULER_RUN_NOW_TIMEOUT = 25
 
-
 # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+CELERY_BROKER_URL = 'redis://localhost:6379'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379'
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+
+
+CACHES = {
+    'default':{
+        'TIMEOUT':60,
+        'BACKEND':
+            'django.core.cache.backends.filebased.FileBasedCache',
+        'LOCATION': os.path.join(BASE_DIR, 'cache_files'),
+    }
+}
